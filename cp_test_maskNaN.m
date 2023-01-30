@@ -38,12 +38,27 @@ Dtypes = spm_type;
 % - 1/3 made of NaNs
 Img_sz = [2 4 3]; % image size
 Img_val = zeros(Img_sz);
-Img_val(:,:,1) = 10.^(randn(Img_sz(1:2))*2).*sign(randn(Img_sz(1:2)));
+Img_val(:,:,1) = 10.^(randn(Img_sz(1:2))).*sign(randn(Img_sz(1:2)));
 Img_val(:,:,3) = NaN;
+N_negVal = sum(Img_val(:)<0);
 
-% 2/ save in various formats
+% 2/ save data 
+% Save the same data in all formats
 % use spm_vol, spm_create_vol, and spm_write_vol  
 
+pth_Dat = fullfile(pwd,'tmp_Dat');
+if ~exist(pth_Dat,'dir'), mkdir(pth_Dat), end
+for ii=1:numel(Dtypes)
+    fn_ii = fullfile(pth_Dat,sprintf('Dat_%s.nii',spm_type(Dtypes(ii))));
+    Vii = struct( ...
+        'fname', fn_ii, ...
+        'dim',   Img_sz, ...
+        'dt',    [Dtypes(ii) 0], ...
+        'mat',   eye(4) , ...
+        'descrip', sprintf( 'Test %s data',spm_type(Dtypes(ii)) ));
+    Viic = spm_create_vol(Vii);
+    Viicd = spm_write_vol(Viic,Img_val);
+end
 
 end
 
