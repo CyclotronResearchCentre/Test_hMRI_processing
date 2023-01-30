@@ -21,6 +21,29 @@
 % GIGA Institute, University of Liege, Belgium
 
 function cp_test_maskNaN
+% Main steps
+% 1/ create some data
+% 2/ save in various formats
+% 3/ apply the masking procedure
+% 4/ check the corrected images
+
+
+% Get SPM's data types for images
+Dtypes = spm_type;
+
+% 1/ create some data
+% Synthetic image to be generated:
+% - 1/3 of points will be random non-zero values, positive & negative
+% - 1/3 made of zeros
+% - 1/3 made of NaNs
+Img_sz = [2 4 3]; % image size
+Img_val = zeros(Img_sz);
+Img_val(:,:,1) = 10.^(randn(Img_sz(1:2))*2).*sign(randn(Img_sz(1:2)));
+Img_val(:,:,3) = NaN;
+
+% 2/ save in various formats
+% use spm_vol, spm_create_vol, and spm_write_vol  
+
 
 end
 
