@@ -90,8 +90,15 @@ hmri_proc_zero2nan(b_fnDat)
 
 % 4/ Check the values are correct!
 % Where there is NaN representation, all 0's are turned into NaN's
-% Where there is no NaN representation, 0's are left untouche
+% Where there is no NaN representation, 0's are left untouched
 % All non-0 and non-NaN values are the same.
+% 
+% See in subfunction for specific issues
+% - integer values are scaled and rounded when saved on disk
+% - unsigned integer set the negative values to zeros when saved on disk
+% - float32 (single) files do not have the same resolution as standard 
+%   float64 (double) format for variables
+% => need to account for this
 
 % all results for the N data types and 2 approaches
 res_check = zeros(numel(Dtypes),2);
