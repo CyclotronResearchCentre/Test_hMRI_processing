@@ -40,7 +40,6 @@ Img_sz = [2 4 3]; % image size
 Img_val = zeros(Img_sz);
 Img_val(:,:,1) = 10.^(randn(Img_sz(1:2))).*sign(randn(Img_sz(1:2)));
 Img_val(:,:,3) = NaN;
-% N_negVal = sum(Img_val(:)<0);
 
 % 2/ save data
 % Save the same data in all formats
@@ -84,7 +83,7 @@ end
 % Copy images
 b_fnDat = spm_file(fnDat,'prefix','b_');
 for ii=1:numel(Dtypes)
-    copyfile(fnDat(ii,:),b_fnDat(ii,:))
+    copyfile(fnDat(ii,:),b_fnDat(ii,:));
 end
 % Turn 0's into NaN's
 hmri_proc_zero2nan(b_fnDat)
@@ -119,6 +118,8 @@ V_ii = spm_vol(fnDat_ii);
 % check the format is as expected
 if Dtypes_ii~=V_ii.dt(1),
     % printout the image type that is trouble
+    fprintf('\nProblem "Data type", for file %s.\n', ...
+        spm_file(fnDat_ii,'filename'))
     res_ch = 0;
 end
 % load in values
@@ -126,7 +127,8 @@ val = spm_read_vols(V_ii);
 % perform all checks
 if spm_type(Dtypes_ii,'nanrep') % deal with floats
     if sum(isnan(val(:))) ~= 2*prod(V_ii.dim(1:2))
-        % printout the image type that is trouble
+        fprintf('\nProblem "number of Nans", for file %s.\n', ...
+            spm_file(fnDat_ii,'filename'))
         res_ch = 0;
     end
     % check number of bytes used, if 4 -> turn orignal values in 'single'
@@ -134,7 +136,8 @@ if spm_type(Dtypes_ii,'nanrep') % deal with floats
         Img_val = single(Img_val);
     end
     if any(val(1:prod(V_ii.dim(1:2))) ~= Img_val(1:prod(V_ii.dim(1:2))))
-        % printout the image type that is trouble
+        fprintf('\nProblem "values", for file %s.\n', ...
+            spm_file(fnDat_ii,'filename'))
         res_ch = 0;
     end
 else % deal with integers
@@ -157,7 +160,8 @@ else % deal with integers
     % Total #0s expected
     exp_0s = 2 * prod(V_ii.dim(1:2)) + r_zeros + n_zeros;
     if exp_0s ~= sum(val(:)==0)
-        % printout the image type that is trouble
+            fprintf('\nProblem "number of 0''s", for file %s.\n', ...
+                spm_file(fnDat_ii,'filename'))
         res_ch = 0;
     end
     % Check the remaining values, if any
@@ -169,7 +173,8 @@ else % deal with integers
             % -> use a 10^-6 maximum difference
             % Probably need a better explanation and conversion!
 %         if any(val(l_val2check) ~= Img_val_t(l_val2check))
-            % printout the image type that is trouble
+            fprintf('\nProblem "values", for file %s.\n', ...
+                spm_file(fnDat_ii,'filename'))
             res_ch = 0;
         end
     end
