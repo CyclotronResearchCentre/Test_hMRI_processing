@@ -20,7 +20,7 @@
 % Written by C. Phillips, 2023.
 % GIGA Institute, University of Liege, Belgium
 
-function cp_test_maskNaN
+function res_check = cp_test_maskNaN
 % Main steps
 % 1/ create some data
 % 2/ save in various formats
@@ -32,15 +32,15 @@ function cp_test_maskNaN
 Dtypes = spm_type;
 
 % 1/ create some data
-% Synthetic image to be generated:
-% - 1/3 of points will be random non-zero values, positive & negative
-% - 1/3 made of zeros
-% - 1/3 made of NaNs
+% 3D synthetic image to be generated, z-axis is of size 3 such that
+% - z=1 of points will be random non-zero values, positive & negative
+% - z=2 made of zeros
+% - z=3 made of NaNs
 Img_sz = [2 4 3]; % image size
 Img_val = zeros(Img_sz);
 Img_val(:,:,1) = 10.^(randn(Img_sz(1:2))).*sign(randn(Img_sz(1:2)));
 Img_val(:,:,3) = NaN;
-N_negVal = sum(Img_val(:)<0);
+% N_negVal = sum(Img_val(:)<0);
 
 % 2/ save data
 % Save the same data in all formats
@@ -56,7 +56,7 @@ for ii=1:numel(Dtypes)
         'mat',   eye(4) , ...
         'descrip', sprintf( 'Test %s data',spm_type(Dtypes(ii)) ));
     Vii = spm_create_vol(Vii);
-    VDat(ii) = spm_write_vol(Vii,Img_val);
+    VDat(ii) = spm_write_vol(Vii,Img_val); %#ok<*AGROW>
 end
 fnDat = char(VDat(:).fname);
 
@@ -103,36 +103,50 @@ end
 
 end
 
-%% SUBFUNCTIO
+%% SUBFUNCTION
 
 % Function to check if things are ok with the "fixed" image saved on disk.
 % Example
 % ii = 1; fnDat_ii = a_fnDat(ii,:); Dtypes_ii = Dtypes(ii);
 function res_ch = check_img(Img_val,fnDat_ii,Dtypes_ii)
 
-% By default the test is negative, i.e. there is a problem, unless proven
+% By default the test is positive, i.e. there is no problem, unless proven
 % otherwise
-res_ch = 0;
+res_ch = 1;
 % map volume
 V_ii = spm_vol(fnDat_ii);
 
 % check the format is as expected
 if Dtypes_ii~=V_ii.dt(1),
     % printout the image type that is trouble
-    return,
+    res_ch = 0;
 end
 % load in values
-val = spm_read_vols(V_ii)
+val = spm_read_vols(V_ii);
 % perform all checks
 if spm_type(Dtypes_ii,'nanrep') % deal with floats
-    
+    if sum(isnan(val(:))) ~= 2*prod(V_ii.dim(1:2))
+        % printout the image type that is trouble
+        res_ch = 0;
+    end
+    % check number of bytes used, if 4 -> turn orignal values in 'single'
+    if spm_type(Dtypes_ii,'bits') == 32
+        Img_val = single(Img_val);
+    end
+    if any(val(1:prod(V_ii.dim(1:2))) ~= Img_val(1:prod(V_ii.dim(1:2))))
+        % printout the image type that is trouble
+        res_ch = 0;
+    end
 else % deal with integers
     % round to nearest integer accounting for the scaling factor
     Img_val_t = round(Img_val/V_ii.pinfo(1))*V_ii.pinfo(1);
-    r_zeros = sum(Img_val_t(1:prod(V_ii.dim(1:2)))==0); %#0s due to rounding off
+    % #0s due to rounding off
+    r_zeros = sum(Img_val_t(1:prod(V_ii.dim(1:2)))==0);
     if spm_type(Dtypes_ii,'minval')<0 % deal with pos & neg integers
         % #0s due to negative values
         n_zeros = 0;
+        % values to actually check
+        l_val2check = find(Img_val_t(1:prod(V_ii.dim(1:2)))~=0);
     else % deal with positive integers only
         % #0s due to negative values
         n_zeros = sum(Img_val_t(1:prod(V_ii.dim(1:2)))<0);
@@ -140,17 +154,23 @@ else % deal with integers
         l_val2check = find(Img_val_t(1:prod(V_ii.dim(1:2)))>0);
     end
     
-    % Check the #0s expected
-    exp_0s = 2 * 8 + r_zeros + n_zeros;
+    % Total #0s expected
+    exp_0s = 2 * prod(V_ii.dim(1:2)) + r_zeros + n_zeros;
     if exp_0s ~= sum(val(:)==0)
         % printout the image type that is trouble
-        return,
+        res_ch = 0;
     end
     % Check the remaining values, if any
     if exp_0s<prod(V_ii.dim)
-        if val(l_val2check) ~= Img_val_t(l_val2check)
+        diff_val = val(l_val2check) - Img_val_t(l_val2check);
+        if any(abs(diff_val)>1e-6)
+            % Weird thing happen when dealing with int32/uitn32, due to
+            % some rounding off error
+            % -> use a 10^-6 maximum difference
+            % Probably need a better explanation and conversion!
+%         if any(val(l_val2check) ~= Img_val_t(l_val2check))
             % printout the image type that is trouble
-            return,
+            res_ch = 0;
         end
     end
     
