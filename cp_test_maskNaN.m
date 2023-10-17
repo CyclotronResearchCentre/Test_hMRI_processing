@@ -33,7 +33,7 @@ Dtypes = spm_type;
 
 % 1/ create some data
 % 3D synthetic image to be generated, z-axis is of size 3 such that
-% - z=1 of points will be random non-zero values, positive & negative
+% - z=1 made of points will be random non-zero values, positive & negative
 % - z=2 made of zeros
 % - z=3 made of NaNs
 Img_sz = [2 4 3]; % image size
